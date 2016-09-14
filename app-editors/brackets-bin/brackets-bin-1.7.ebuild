@@ -4,15 +4,16 @@
 
 EAPI=5
 
+inherit pax-utils
+
 DESCRIPTION="open source code editor for web designers and front-end developers"
 HOMEPAGE="http://brackets.io"
 SRC_URI="amd64?	( https://github.com/adobe/brackets/releases/download/release-${PV}/Brackets.Release.${PV}.64-bit.deb )
-	x86?	( https://github.com/adobe/brackets/releases/download/release-${PV}/Brackets.Release.${PV}.32-bit.deb )"
-
+         x86?	( https://github.com/adobe/brackets/releases/download/release-${PV}/Brackets.Release.${PV}.32-bit.deb )"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
-IUSE="chromium"
+IUSE="chromium pax_kernel"
 
 RDEPEND="
     >=dev-libs/openssl-0.9.7d
@@ -26,8 +27,8 @@ RDEPEND="
     >=media-libs/fontconfig-2.8.0
     >=media-libs/freetype-2.3.9
     >=sys-devel/gcc-4.1.1
-    >=dev-libs/libgcrypt-1.4.5
     >=x11-libs/gdk-pixbuf-2.22.0
+    dev-libs/libgcrypt:11/11
     >=dev-libs/glib-2.18.0
     >=x11-libs/gtk+-2.24.0
     >=dev-libs/nspr-1.8.0.10
@@ -46,26 +47,24 @@ RDEPEND="
     >=x11-misc/xdg-utils-1.0.2
     net-misc/wget
     chromium? ( www-client/chromium )
-    >=app-arch/deb2targz-1-r2
     "
 DEPEND="sys-devel/binutils"
 
 S="${WORKDIR}"
 
-src_unpack() {
-	echo "*** A = ${A}"
-	#unpack ${A}
-	ls -la ${DISTDIR}
-	ln -sf ${DISTDIR}/${A} ${A}
-	ls -la
-	deb2targz ${A} || exit 1
-	rm -f ${A}
-	mv Brackets.Release.${PV}.64-bit.tar.xz data.tar.xz || exit 1
-	echo "*** After unpack ***"
-}
-
 src_install() {
     tar xJf data.tar.xz -C "${D}"
+
+    if use pax_kernel; then
+        pax-mark cm "${D}"/opt/brackets/Brackets || die
+        pax-mark cm "${D}"/opt/brackets/Brackets-node || die
+        eqawarn "You have set USE=pax_kernel meaning that you intend to run"
+        eqawarn "Brackets under a PaX enabled kernel.  To do so, we must modify"
+        eqawarn "the Brackets binary itself and this *may* lead to breakage!  If"
+        eqawarn "you suspect that Brackets is being broken by this modification,"
+        eqawarn "please open a bug."
+    fi
+
 }
 
 pkg_postinst() {
